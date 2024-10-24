@@ -38,7 +38,6 @@ function setup() {
   bg = loadImage("data/background.jpg");
   createCanvas(windowWidth, windowHeight);
   getAudioContext().suspend();
-  
   if (width < height) {
     desktop = false;
   }
@@ -68,15 +67,6 @@ function draw() {
 }
 
 function mousePressed() {
-  handlePress();
-}
-
-function touchStarted() {
-  handlePress();
-  return false; // Prevent default behavior
-}
-
-function handlePress() {
   resetAutoGrow(); 
 
   if (falling) {
@@ -106,20 +96,25 @@ function handlePress() {
 function keyTyped() {
   if (key === " ") {
     toggleLanguage(); 
+
+    // Stop the sound if playing
+    if (sound.isPlaying()) {
+      sound.stop();
+      sound.noLoop();
+    } else {
+      sound.play();
+      sound.loop();
+    }
+
     resetBranches();
   }
 }
 
 function toggleLanguage() {
-  currentLanguage = currentLanguage === 'English' ? 'Indonesia' : 'English';
-  
-  // Stop and play sound
-  if (sound.isPlaying()) {
-    sound.stop();
-    sound.noLoop();
+  if (currentLanguage === 'English') {
+    currentLanguage = 'Indonesia';
   } else {
-    sound.play();
-    sound.loop();
+    currentLanguage = 'English';
   }
 }
 
@@ -129,14 +124,22 @@ function resetBranches() {
   leftBranchCount = middleBranchCount = rightBranchCount = centerBranchCount = 0; 
 
   let initialBranchLength = desktop ? 150 : 200 * (windowWidth / 800);
+  // Create the initial branch without any text
   let initialBranch = new Branch(width / 2, height, -PI / 2, initialBranchLength, "", 0); 
   branches.push(initialBranch);
 }
 
+
 function getCurrentWords() {
-  return currentLanguage === 'English' ? 
-    [...leftWords, ...middleWords, ...rightWords, ...centerWords] :
-    [...leftWordsIndonesia, ...middleWordsIndonesia, ...rightWordsIndonesia, ...centerWordsIndonesia];
+  if (currentLanguage === 'English') {
+    return [
+      ...leftWords, ...middleWords, ...rightWords, ...centerWords
+    ];
+  } else {
+    return [
+      ...leftWordsIndonesia, ...middleWordsIndonesia, ...rightWordsIndonesia, ...centerWordsIndonesia
+    ];
+  }
 }
 
 function resetAutoGrow() {
@@ -163,7 +166,7 @@ function autoGrow() {
   for (let branch of branches) {
     if (!branch.finished) {
       branch.branchOut();
-      break;
+      break; 
     }
   }
 }
@@ -240,7 +243,7 @@ class Branch {
       newBranch = new Branch(newX, newY, this.angle - angleOffset, branchLength, getCurrentWords()[wordIndex], newLevel); 
       leftBranchCount++; 
     } else if (wordIndex < leftWords.length + middleWords.length) {
-      let xStart, yStart;
+      let xStart, yStart, middleAngle;
 
       if (middleBranchCount === 0) {
         let rootBranch = branches[0];
@@ -252,10 +255,11 @@ class Branch {
         yStart = lastMiddleBranch.y + sin(lastMiddleBranch.angle) * lastMiddleBranch.length;
       }
 
+      middleAngle = random(-PI / 2, 0); 
       newBranch = new Branch(xStart, yStart, this.angle + angleOffset, branchLength, getCurrentWords()[wordIndex], newLevel);
       middleBranchCount++;
     } else if (wordIndex < leftWords.length + middleWords.length + rightWords.length) {
-      let xStart, yStart;
+      let xStart, yStart, rightAngle;
 
       if (rightBranchCount === 0) {
         let rootBranch = branches[0]; 
@@ -267,10 +271,11 @@ class Branch {
         yStart = lastRightBranch.y + sin(lastRightBranch.angle) * lastRightBranch.length;
       }
 
-      newBranch = new Branch(xStart, yStart, random(-PI / 2, 0), branchLength, getCurrentWords()[wordIndex], newLevel); 
+      rightAngle = random(-PI / 2, 0);
+      newBranch = new Branch(xStart, yStart, rightAngle, branchLength, getCurrentWords()[wordIndex], newLevel); 
       rightBranchCount++;
     } else if (wordIndex < leftWords.length + middleWords.length + rightWords.length + centerWords.length) {
-      let xStart, yStart;
+      let xStart, yStart, centerAngle;
 
       if (centerBranchCount === 0) {
         let rootBranch = branches[0]; 
@@ -282,7 +287,8 @@ class Branch {
         yStart = lastCenterBranch.y + sin(lastCenterBranch.angle) * lastCenterBranch.length;
       }
 
-      newBranch = new Branch(xStart, yStart, random(-PI / 2, 0), branchLength, getCurrentWords()[wordIndex], newLevel); 
+      centerAngle = random(-PI / 2, 0);
+      newBranch = new Branch(xStart, yStart, centerAngle, branchLength, getCurrentWords()[wordIndex], newLevel); 
       centerBranchCount++; 
     }
 
